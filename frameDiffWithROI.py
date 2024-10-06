@@ -1,16 +1,24 @@
 import cv2
 import numpy as np
+import time
 
 # Capture video from the camera
 cap = cv2.VideoCapture(0)  # Use the correct index for your camera
 
 # Initialize the first frame
 ret, frame1 = cap.read()
-frame1_gray = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+frame1_roi = frame1[100:500, 100:500]  # Extract ROI from the initial frame
+frame1_gray = cv2.cvtColor(frame1_roi, cv2.COLOR_BGR2GRAY)
 frame1_gray = cv2.GaussianBlur(frame1_gray, (21, 21), 0)
 
-# Define a region of interest (ROI) for the tray
-roi = (100, 100, 400, 400)  # Example coordinates, adjust as needed
+# Define a region of interest (ROI) for the tray as an ellipse
+roi_center = (300, 300)  # Center of the ellipse (adjust as needed)
+roi_axes = (200, 200)  # Length of the axes (adjust as needed)
+roi_angle = 0  # Angle of rotation of the ellipse
+
+# Counter for continuous tray movement
+movement_counter = 0
+alert_sent = False
 
 while True:
     # Read the next frame
@@ -18,11 +26,18 @@ while True:
     if not ret:
         break
     
-    # Extract the ROI from the frame
-    frame2_roi = frame2[roi[1]:roi[1]+roi[3], roi[0]:roi[0]+roi[2]]
+    # Create a mask for the elliptical ROI
+    mask = np.zeros(frame2.shape[:2], dtype=np.uint8)
+    cv2.ellipse(mask, roi_center, roi_axes, roi_angle, 0, 360, 255, -1)
     
-    # Convert the frame to grayscale and blur it
-    frame2_gray = cv2.cvtColor(frame2_roi, cv2.COLOR_BGR2GRAY)
+    # Apply the mask to both the initial and current frames
+    frame1_masked = cv2.bitwise_and(frame1, frame1, mask=mask)
+    frame2_masked = cv2.bitwise_and(frame2, frame2, mask=mask)
+    
+    # Convert the masked frames to grayscale and blur them
+    frame1_gray = cv2.cvtColor(frame1_masked, cv2.COLOR_BGR2GRAY)
+    frame1_gray = cv2.GaussianBlur(frame1_gray, (21, 21), 0)
+    frame2_gray = cv2.cvtColor(frame2_masked, cv2.COLOR_BGR2GRAY)
     frame2_gray = cv2.GaussianBlur(frame2_gray, (21, 21), 0)
     
     # Compute the absolute difference between the current frame and previous frame
@@ -44,16 +59,26 @@ while True:
             moving = True
             break
     
+    if moving:
+        movement_counter += 1
+        if movement_counter >= 14 and not alert_sent:
+            alert_sent = True
+    else:
+        movement_counter = 0
+        alert_sent = False
+    
+    # Display message if the tray stops moving
     if not moving:
+        cv2.putText(frame2, 'TRAY STOPPED MOVING!', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
         print("Tray is not moving!")
     else:
         print("Tray is spinning.")
     
     # Update the previous frame
-    frame1_gray = frame2_gray
+    frame1 = frame2.copy()
     
     # Display the camera feed with the detected motion (for debugging)
-    cv2.rectangle(frame2, (roi[0], roi[1]), (roi[0] + roi[2], roi[1] + roi[3]), (0, 255, 0), 2)
+    cv2.ellipse(frame2, roi_center, roi_axes, roi_angle, 0, 360, (0, 255, 0), 2)
     cv2.imshow('Motion Detection', frame2)
     
     # Break the loop if 'q' is pressed
