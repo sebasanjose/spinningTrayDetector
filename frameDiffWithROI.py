@@ -4,15 +4,16 @@ import time
 
 # Capture video from the camera
 cap = cv2.VideoCapture(0)  # Use the correct index for your camera
+cap.set(cv2.CAP_PROP_FPS, 5)  # Reduce FPS to make motion detection more sensitive (adjust as needed)
 
 # Initialize the first frame
 ret, frame1 = cap.read()
 frame1_roi = frame1[100:500, 100:500]  # Extract ROI from the initial frame
 frame1_gray = cv2.cvtColor(frame1_roi, cv2.COLOR_BGR2GRAY)
-frame1_gray = cv2.GaussianBlur(frame1_gray, (21, 21), 0)
+frame1_gray = cv2.GaussianBlur(frame1_gray, (15, 15), 0)  # Reduce blur kernel size to increase sensitivity
 
 # Define a region of interest (ROI) for the tray as an ellipse
-roi_center = (600, 560)  # Move ellipse closer to the bottom  # Center of the ellipse (adjust as needed)
+roi_center = (600, 570)  # Move ellipse closer to the bottom  # Center of the ellipse (adjust as needed)
 roi_axes = (600, 150)  # Stretch the ellipse horizontally  # Length of the axes (adjust as needed)
 roi_angle = 0  # Angle of rotation of the ellipse
 
@@ -36,15 +37,15 @@ while True:
     
     # Convert the masked frames to grayscale and blur them
     frame1_gray = cv2.cvtColor(frame1_masked, cv2.COLOR_BGR2GRAY)
-    frame1_gray = cv2.GaussianBlur(frame1_gray, (21, 21), 0)
+    frame1_gray = cv2.GaussianBlur(frame1_gray, (15, 15), 0)  # Reduce blur kernel size to increase sensitivity
     frame2_gray = cv2.cvtColor(frame2_masked, cv2.COLOR_BGR2GRAY)
-    frame2_gray = cv2.GaussianBlur(frame2_gray, (21, 21), 0)
+    frame2_gray = cv2.GaussianBlur(frame2_gray, (15, 15), 0)  # Reduce blur kernel size to increase sensitivity
     
     # Compute the absolute difference between the current frame and previous frame
     frame_diff = cv2.absdiff(frame1_gray, frame2_gray)
     
     # Apply a threshold to highlight motion
-    _, thresh = cv2.threshold(frame_diff, 30, 255, cv2.THRESH_BINARY)
+    _, thresh = cv2.threshold(frame_diff, 20, 255, cv2.THRESH_BINARY)  # Lower the threshold value to increase sensitivity
     
     # Dilate the thresholded image to fill in gaps
     thresh = cv2.dilate(thresh, None, iterations=2)
@@ -55,7 +56,7 @@ while True:
     # Analyze contours to determine if there is significant movement
     moving = False
     for contour in contours:
-        if cv2.contourArea(contour) > 500:  # Adjust the area threshold as needed
+        if cv2.contourArea(contour) > 300:  # Lower the area threshold to increase sensitivity
             moving = True
             break
     
