@@ -12,8 +12,8 @@ frame1_gray = cv2.cvtColor(frame1_roi, cv2.COLOR_BGR2GRAY)
 frame1_gray = cv2.GaussianBlur(frame1_gray, (21, 21), 0)
 
 # Define a region of interest (ROI) for the tray as an ellipse
-roi_center = (300, 300)  # Center of the ellipse (adjust as needed)
-roi_axes = (200, 200)  # Length of the axes (adjust as needed)
+roi_center = (600, 560)  # Move ellipse closer to the bottom  # Center of the ellipse (adjust as needed)
+roi_axes = (600, 150)  # Stretch the ellipse horizontally  # Length of the axes (adjust as needed)
 roi_angle = 0  # Angle of rotation of the ellipse
 
 # Counter for continuous tray movement
